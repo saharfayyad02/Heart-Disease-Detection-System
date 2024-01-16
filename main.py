@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
@@ -92,6 +93,31 @@ def Rf_gridsearch(X_train, X_test, y_train, y_test):
     print(f"Recall: {recall:.4f}")
     print(f"F1-score: {f1:.4f}\n")
 
+def LogisticRegressionModel(X_train, X_test, y_train, y_test):
+    # Hyperparameter tuning for Logistic Regression
+    param_grid = {'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000]}
+    logreg = LogisticRegression(max_iter=1000)
+    grid_search = GridSearchCV(logreg, param_grid, cv=5)
+    grid_search.fit(X_train, y_train)
+
+    best_C = grid_search.best_params_['C']
+
+    # Use the best hyperparameter to train the model
+    logreg = LogisticRegression(C=best_C, max_iter=1000)
+    logreg.fit(X_train, y_train)
+    y_pred = logreg.predict(X_test)
+
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred)
+
+    print("Results for Logistic Regression:")
+    print(f"Best C: {best_C}")
+    print(f"Accuracy: {accuracy:.4f}")
+    print(f"Precision: {precision:.4f}")
+    print(f"Recall: {recall:.4f}")
+    print(f"F1-score: {f1:.4f}\n")
 
 if __name__ == '__main__':
     df = read_file("heart.csv")
@@ -103,13 +129,17 @@ if __name__ == '__main__':
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state=42)
 
+    print("--------------------------KNN-----------------------------------")
     KNN(1,X_train, X_test, y_train, y_test)
     KNN(3,X_train, X_test, y_train, y_test)
+    print("--------------------------RF------------------------------------")
     RF(X_train, X_test, y_train, y_test,50)
     RF(X_train, X_test, y_train, y_test,100)
     RF(X_train, X_test, y_train, y_test,200)
     RF(X_train, X_test, y_train, y_test,500)
-    print("-------------------------------------------------------------------------")
+    print("--------------------------LR--------------------------------------")
+    LogisticRegressionModel(X_train, X_test, y_train, y_test)
+    print("-------------------------RF2-------------------------------------")
     Rf_gridsearch(X_train, X_test, y_train, y_test)
 
 
