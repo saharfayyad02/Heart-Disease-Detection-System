@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+from sklearn import svm
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
@@ -7,7 +8,6 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 from sklearn.preprocessing import LabelEncoder
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
-
 
 def read_file(file):
     file_path = f"{file}"
@@ -57,7 +57,7 @@ def KNN(k, X_train, X_test, y_train, y_test, metric='manhattan'):
 
 def RF(X_train, X_test, y_train, y_test,n_estimator):
 
-    rf_classifier = RandomForestClassifier(n_estimators=n_estimator, random_state=42)
+    rf_classifier = RandomForestClassifier(n_estimators=n_estimator, random_state = 42)
     rf_classifier.fit(X_train, y_train)
     y_pred = rf_classifier.predict(X_test)
 
@@ -72,26 +72,6 @@ def RF(X_train, X_test, y_train, y_test,n_estimator):
     print(f"Recall: {recall:.4f}")
     print(f"F1-score: {f1:.4f}\n")
 
-def Rf_gridsearch(X_train, X_test, y_train, y_test):
-    param_grid = {
-        'n_estimators': [50, 100, 200, 500],
-        'max_depth': [5, 10, 15, None],
-    }
-    # rf_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
-    rf_grid_search = GridSearchCV(RandomForestClassifier(), param_grid, cv=5)
-    rf_grid_search.fit(X_train, y_train)
-    best_rf_model = rf_grid_search.best_estimator_
-    y_pred = best_rf_model.predict(X_test)
-
-    accuracy = accuracy_score(y_test, y_pred)
-    precision = precision_score(y_test, y_pred)
-    recall = recall_score(y_test, y_pred)
-    f1 = f1_score(y_test, y_pred)
-
-    print(f"Accuracy: {accuracy:.4f}")
-    print(f"Precision: {precision:.4f}")
-    print(f"Recall: {recall:.4f}")
-    print(f"F1-score: {f1:.4f}\n")
 
 def LogisticRegressionModel(X_train, X_test, y_train, y_test):
     # Hyperparameter tuning for Logistic Regression
@@ -119,6 +99,26 @@ def LogisticRegressionModel(X_train, X_test, y_train, y_test):
     print(f"Recall: {recall:.4f}")
     print(f"F1-score: {f1:.4f}\n")
 
+
+def SVM(X_train, X_test, y_train, y_test,c):
+    clf = svm.SVC(kernel='linear', C=c)
+    # Train the model
+    clf.fit(X_train, y_train)
+    # Make predictions on the test set
+    y_pred = clf.predict(X_test)
+
+    # Evaluate model performance
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred)
+
+    print(f"Results for SVM for {c}:")
+    print(f"Accuracy: {accuracy:.4f}")
+    print(f"Precision: {precision:.4f}")
+    print(f"Recall: {recall:.4f}")
+    print(f"F1-score: {f1:.4f}\n")
+
 if __name__ == '__main__':
     df = read_file("heart.csv")
     df = clean_data(df)
@@ -133,13 +133,18 @@ if __name__ == '__main__':
     KNN(1,X_train, X_test, y_train, y_test)
     KNN(3,X_train, X_test, y_train, y_test)
     print("--------------------------RF------------------------------------")
-    RF(X_train, X_test, y_train, y_test,50)
+    RF(X_train, X_test, y_train, y_test,5)
     RF(X_train, X_test, y_train, y_test,100)
-    RF(X_train, X_test, y_train, y_test,200)
-    RF(X_train, X_test, y_train, y_test,500)
+    RF(X_train, X_test, y_train, y_test,300)
+    RF(X_train, X_test, y_train, y_test,150)
     print("--------------------------LR--------------------------------------")
     LogisticRegressionModel(X_train, X_test, y_train, y_test)
-    print("-------------------------RF2-------------------------------------")
-    Rf_gridsearch(X_train, X_test, y_train, y_test)
+    print("-------------------------SVM-------------------------------------")
+    SVM(X_train, X_test, y_train, y_test,0.1)
+    SVM(X_train, X_test, y_train, y_test,1)
+    SVM(X_train, X_test, y_train, y_test,10)
+    SVM(X_train, X_test, y_train, y_test,100)
+
+    #Rf_gridsearch(X_train, X_test, y_train, y_test)
 
 
