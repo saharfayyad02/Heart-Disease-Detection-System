@@ -100,94 +100,102 @@ def KNN(k, X_train, X_test, y_train, y_test, metric='manhattan'):
     print(f"Recall: {recall:.4f}")
     print(f"F1-score: {f1:.4f}\n")
 
-def RF(X_train, X_test, y_train, y_test,n_estimator):
 
-    rf_classifier = RandomForestClassifier(n_estimators=n_estimator, random_state = 42)
+def RF(X_train, X_test, y_train, y_test, n_estimator):
+    rf_classifier = RandomForestClassifier(n_estimators=n_estimator, random_state=42)
     rf_classifier.fit(X_train, y_train)
-    y_pred = rf_classifier.predict(X_test)
 
-    accuracy = accuracy_score(y_test, y_pred)
-    precision = precision_score(y_test, y_pred)
-    recall = recall_score(y_test, y_pred)
-    f1 = f1_score(y_test, y_pred)
+    # Predictions on the test set
+    y_test_pred = rf_classifier.predict(X_test)
 
-    print(f"RF for: {n_estimator}")
-    print(f"Accuracy: {accuracy:.4f}")
-    print(f"Precision: {precision:.4f}")
-    print(f"Recall: {recall:.4f}")
-    print(f"F1-score: {f1:.4f}\n")
+    # Evaluate model performance on test set
+    test_accuracy = accuracy_score(y_test, y_test_pred)
+    test_precision = precision_score(y_test, y_test_pred)
+    test_recall = recall_score(y_test, y_test_pred)
+    test_f1 = f1_score(y_test, y_test_pred)
 
-def LogisticRegressionModel(X_train, X_test, y_train, y_test):
-    # Hyperparameter tuning for Logistic Regression
-    param_grid = {'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000]}
-    logreg = LogisticRegression(max_iter=1000)
-    grid_search = GridSearchCV(logreg, param_grid, cv=5)
-    grid_search.fit(X_train, y_train)
+    print(f"RF for n_estimators={n_estimator}:")
+    print(f"Accuracy: {test_accuracy:.4f}")
+    print(f"Precision: {test_precision:.4f}")
+    print(f"Recall: {test_recall:.4f}")
+    print(f"F1-score: {test_f1:.4f}\n")
 
-    best_C = grid_search.best_params_['C']
 
-    # Use the best hyperparameter to train the model
-    logreg = LogisticRegression(C=best_C, max_iter=1000)
-    logreg.fit(X_train, y_train)
-    y_pred = logreg.predict(X_test)
 
-    accuracy = accuracy_score(y_test, y_pred)
-    precision = precision_score(y_test, y_pred)
-    recall = recall_score(y_test, y_pred)
-    f1 = f1_score(y_test, y_pred)
+# def LogisticRegressionModel(X_train, X_test, y_train, y_test):
+#     # Hyperparameter tuning for Logistic Regression
+#     param_grid = {'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000]}
+#     logreg = LogisticRegression(max_iter=1000)
+#     grid_search = GridSearchCV(logreg, param_grid, cv=5)
+#     grid_search.fit(X_train, y_train)
+#
+#     best_C = grid_search.best_params_['C']
+#
+#     # Use the best hyperparameter to train the model
+#     logreg = LogisticRegression(C=best_C, max_iter=1000)
+#     logreg.fit(X_train, y_train)
+#     y_pred = logreg.predict(X_test)
+#
+#     accuracy = accuracy_score(y_test, y_pred)
+#     precision = precision_score(y_test, y_pred)
+#     recall = recall_score(y_test, y_pred)
+#     f1 = f1_score(y_test, y_pred)
+#
+#     print("Results for Logistic Regression:")
+#     print(f"Best C: {best_C}")
+#     print(f"Accuracy: {accuracy:.4f}")
+#     print(f"Precision: {precision:.4f}")
+#     print(f"Recall: {recall:.4f}")
+#     print(f"F1-score: {f1:.4f}\n")
 
-    print("Results for Logistic Regression:")
-    print(f"Best C: {best_C}")
-    print(f"Accuracy: {accuracy:.4f}")
-    print(f"Precision: {precision:.4f}")
-    print(f"Recall: {recall:.4f}")
-    print(f"F1-score: {f1:.4f}\n")
+def SVM(X_train, X_test, y_train, y_test, kernel):
+    # Initialize SVM classifier
+    clf = svm.SVC(kernel=kernel)
 
-def SVM(X_train, X_test, y_train, y_test,c):
-    clf = svm.SVC(kernel='linear', C=c)
-    # Train the model
+    # Train the model on the training set
     clf.fit(X_train, y_train)
+
     # Make predictions on the test set
-    y_pred = clf.predict(X_test)
+    y_test_pred = clf.predict(X_test)
 
-    # Evaluate model performance
-    accuracy = accuracy_score(y_test, y_pred)
-    precision = precision_score(y_test, y_pred)
-    recall = recall_score(y_test, y_pred)
-    f1 = f1_score(y_test, y_pred)
+    # Evaluate model performance on the testing set
+    test_accuracy = accuracy_score(y_test, y_test_pred)
+    test_precision = precision_score(y_test, y_test_pred)
+    test_recall = recall_score(y_test, y_test_pred)
+    test_f1 = f1_score(y_test, y_test_pred)
 
-    print(f"Results for SVM for {c}:")
-    print(f"Accuracy: {accuracy:.4f}")
-    print(f"Precision: {precision:.4f}")
-    print(f"Recall: {recall:.4f}")
-    print(f"F1-score: {f1:.4f}\n")
+    print(f"Results for SVM (Testing Set) for {kernel}:")
+    print(f"Accuracy: {test_accuracy:.4f}")
+    print(f"Precision: {test_precision:.4f}")
+    print(f"Recall: {test_recall:.4f}")
+    print(f"F1-score: {test_f1:.4f}\n")
+
+
 
 if __name__ == '__main__':
     df = read_file("heart.csv")
-    EDA(df)
+    df = EDA(df)
     convert_to_binary_encoding(df)
 
     X = df.drop('HeartDisease', axis=1) #x-axis represent the target
     y = df['HeartDisease']
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state=123)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state=42)
 
     print("--------------------------KNN-----------------------------------")
-    #KNN(1,X_train, X_test, y_train, y_test)
-    #KNN(3,X_train, X_test, y_train, y_test)
-    # print("--------------------------RF------------------------------------")
-    #RF(X_train, X_test, y_train, y_test,5)
-    # RF(X_train, X_test, y_train, y_test,100)
-    # RF(X_train, X_test, y_train, y_test,300)
-    # RF(X_train, X_test, y_train, y_test,150)
-    # print("--------------------------LR--------------------------------------")
-    # LogisticRegressionModel(X_train, X_test, y_train, y_test)
-    # print("-------------------------SVM-------------------------------------")
-    # SVM(X_train, X_test, y_train, y_test,0.1)
-    # SVM(X_train, X_test, y_train, y_test,1)
-    # SVM(X_train, X_test, y_train, y_test,10)
-    # SVM(X_train, X_test, y_train, y_test,100)
+    KNN(1,X_train, X_test, y_train, y_test)
+    KNN(3,X_train, X_test, y_train, y_test)
 
-    #Rf_gridsearch(X_train, X_test, y_train, y_test)
+    print("--------------------------RF------------------------------------")
+    RF(X_train, X_test, y_train, y_test,5)
+    RF(X_train, X_test, y_train, y_test,10)
+    RF(X_train, X_test, y_train, y_test,100)
+    RF(X_train, X_test, y_train, y_test,300)
+
+    print("-------------------------SVM-------------------------------------")
+    SVM(X_train, X_test, y_train, y_test,"linear")
+    SVM(X_train, X_test, y_train, y_test,"poly")
+    SVM(X_train, X_test, y_train, y_test,"rbf")
+    SVM(X_train, X_test, y_train, y_test,"sigmoid")
 
 
