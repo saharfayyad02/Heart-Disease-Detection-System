@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn import svm
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split,cross_val_score, StratifiedKFold
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score,make_scorer,confusion_matrix, classification_report
 from sklearn.preprocessing import LabelEncoder
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
@@ -17,9 +17,9 @@ def read_file(file):
 
 def EDA(df):
     # using statics to mean-median for numeric values / and mode with non-numeric values#
-    numeric_columns = df.select_dtypes(include=['int64', 'float64'])
-    Mean = numeric_columns.mean()
-    Median = numeric_columns.median()
+    numerical_features = df.select_dtypes(include=['int64', 'float64'])
+    Mean = numerical_features.mean()
+    Median = numerical_features.median()
     print("Mean values:")
     print(Mean)
     print("\nMedian values:")
@@ -121,7 +121,6 @@ def RF(X_train, X_test, y_train, y_test, n_estimator):
     print(f"F1-score: {test_f1:.4f}\n")
 
 
-
 # def LogisticRegressionModel(X_train, X_test, y_train, y_test):
 #     # Hyperparameter tuning for Logistic Regression
 #     param_grid = {'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000]}
@@ -170,6 +169,41 @@ def SVM(X_train, X_test, y_train, y_test, kernel):
     print(f"Recall: {test_recall:.4f}")
     print(f"F1-score: {test_f1:.4f}\n")
 
+def RF_Performance(X_train, X_test, y_train, y_test):
+    rf_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
+    rf_classifier.fit(X_train, y_train)
+
+    # Predictions on the test set
+    y_test_pred = rf_classifier.predict(X_test)
+
+    # Model performance metrics
+    accuracy = accuracy_score(y_test, y_test_pred)
+    precision = precision_score(y_test, y_test_pred, average='weighted')
+    recall = recall_score(y_test, y_test_pred, average='weighted')
+
+    # Confusion Matrix
+    cm = confusion_matrix(y_test, y_test_pred)
+    print("Confusion Matrix:\n", cm)
+
+    # Detailed classification report
+    report = classification_report(y_test, y_test_pred)
+    print("\nClassification Report:\n", report)
+
+    # Feature Importances
+    feature_importances = rf_classifier.feature_importances_
+    print("\nFeature Importances:\n", feature_importances)
+
+    # Cross-validation (optional, for more robust performance assessment)
+    scores = cross_val_score(rf_classifier, X, y, cv=5)  # X and y are your full dataset
+    print("\nCross-Validation Scores:\n", scores)
+
+    # Error Analysis (suggested approach)
+    errors = X_test[(y_test != y_test_pred)]
+    #print("\nCross-Validation errors:\n",errors)
+    #Analyze the 'errors' DataFrame to find common patterns among misclassifications
+
+    # Print overall model performance
+    print(f"\nModel Performance Metrics:\nAccuracy: {accuracy:.2f}, Precision: {precision:.2f}, Recall: {recall:.2f}")
 
 
 if __name__ == '__main__':
@@ -197,5 +231,8 @@ if __name__ == '__main__':
     SVM(X_train, X_test, y_train, y_test,"poly")
     SVM(X_train, X_test, y_train, y_test,"rbf")
     SVM(X_train, X_test, y_train, y_test,"sigmoid")
+
+    print("-------------------------RF_Performance-------------------------------")
+    RF_Performance(X_train, X_test, y_train, y_test)
 
 
