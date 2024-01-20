@@ -39,7 +39,7 @@ def EDA(df):
     numerical_features = df[features].select_dtypes(include=['int64', 'float64']).columns
     categorical_features = df[features].select_dtypes(include=['object']).columns
 
-   # plot histogram for each numeric value -data visulatization- #
+   # plot histogram for each numeric value -data visualization- #
     plt.figure(figsize=(15, 15))
     for i, feature in enumerate(numerical_features, 1):
         plt.subplot(2,3, i)
@@ -48,7 +48,7 @@ def EDA(df):
     plt.tight_layout()
     plt.show()
 
-    # Plot bar plots for categorical features in subplots -data visulatization- #
+    # Plot bar plots for categorical features in subplots -data visualization- #
     plt.figure(figsize=(15, 15))
     for i, feature in enumerate(categorical_features, 1):
         plt.subplot(2, 3, i)
