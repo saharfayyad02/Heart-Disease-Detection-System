@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn import svm
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
@@ -14,29 +15,73 @@ def read_file(file):
     df = pd.read_csv(file_path)
     return df
 
-def check_data(df):
-    print("isnull ",df.isnull().sum(),"\n")
+def EDA(df):
+    # using statics to mean-median for numeric values / and mode with non-numeric values#
+    numeric_columns = df.select_dtypes(include=['int64', 'float64'])
+    Mean = numeric_columns.mean()
+    Median = numeric_columns.median()
+    print("Mean values:")
+    print(Mean)
+    print("\nMedian values:")
+    print(Median)
+
+    non_numeric_columns = df.select_dtypes(exclude=['int64', 'float64'])
+    Mode = non_numeric_columns.mode().iloc[0]
+    print("\nMode values:")
+    print(Mode)
     print("dtypes",df.dtypes,"\n")
+
+    features = ["Age", "Sex", "ChestPainType", "RestingBP", "Cholesterol", "FastingBS", "RestingECG", "MaxHR",
+                "ExerciseAngina", "Oldpeak", "ST_Slope"]
+    target = "HeartDisease"
+
+    # Split features into numerical and categorical
+    numerical_features = df[features].select_dtypes(include=['int64', 'float64']).columns
+    categorical_features = df[features].select_dtypes(include=['object']).columns
+
+    plt.figure(figsize=(15, 15))
+    for i, feature in enumerate(numerical_features, 1):
+        plt.subplot(2,3, i)
+        sns.histplot(data=df, x=feature, hue=target, multiple="stack", kde=True, palette="Set2", alpha=0.7)
+        plt.title(f'Histogram for {feature}')
+    plt.tight_layout()
+    plt.show()
+
+    # Plot bar plots for categorical features in subplots
+    plt.figure(figsize=(15, 15))
+    for i, feature in enumerate(categorical_features, 1):
+        plt.subplot(2, 3, i)
+        sns.countplot(data=df, x=feature, hue=target, palette="Set2", alpha=0.7)
+        plt.title(f'Bar Plot for {feature}')
+    plt.tight_layout()
+    plt.show()
+
+    # here we should check the data first#
+    print("befor handling the data ")
+    print("isnull ",df.isnull().sum(),"\n")
     print("duplicated",df.duplicated().sum(),"\n")
-    print("describe",df.describe(),"\n")
+
+    # here to check what is the best to fill the missing values -handle the data-#
     boxplot = df.boxplot(column=['Cholesterol'])
     boxplot.set_ylabel('Values')
-    #plt.show()
+    plt.show()
 
-def clean_data(df):
-    data_frame = df.fillna({"Sex": df['Sex'].mode()[0], "Cholesterol": df['Cholesterol'].median()})
-    data_frame = data_frame.drop_duplicates()
-    return data_frame
+    # fill the missing values #
+    df = df.fillna({"Sex": df['Sex'].mode()[0], "Cholesterol": df['Cholesterol'].median()})
+    df = df.drop_duplicates()
 
+    print("after handling the data ")
+    print("isnull ",df.isnull().sum(),"\n")
+    print("duplicated",df.duplicated().sum(),"\n")
+
+    return df
 
 def convert_to_binary_encoding(df):
     label_encoder = LabelEncoder()
     categorical_columns = ['Sex', 'ChestPainType', 'RestingECG', 'ExerciseAngina', 'ST_Slope']
 
     for column in categorical_columns:
-        df[column] = label_encoder.fit_transform(df[column])
-
-    return df
+         df[column] = label_encoder.fit_transform(df[column])
 
 def KNN(k, X_train, X_test, y_train, y_test, metric='manhattan'):
     knn_classifier = KNeighborsClassifier(n_neighbors=k, metric=metric)
@@ -71,7 +116,6 @@ def RF(X_train, X_test, y_train, y_test,n_estimator):
     print(f"Recall: {recall:.4f}")
     print(f"F1-score: {f1:.4f}\n")
 
-
 def LogisticRegressionModel(X_train, X_test, y_train, y_test):
     # Hyperparameter tuning for Logistic Regression
     param_grid = {'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000]}
@@ -98,7 +142,6 @@ def LogisticRegressionModel(X_train, X_test, y_train, y_test):
     print(f"Recall: {recall:.4f}")
     print(f"F1-score: {f1:.4f}\n")
 
-
 def SVM(X_train, X_test, y_train, y_test,c):
     clf = svm.SVC(kernel='linear', C=c)
     # Train the model
@@ -120,9 +163,8 @@ def SVM(X_train, X_test, y_train, y_test,c):
 
 if __name__ == '__main__':
     df = read_file("heart.csv")
-    df = clean_data(df)
-    df = convert_to_binary_encoding(df)
-    df.to_csv('output.csv', index=False)
+    EDA(df)
+    convert_to_binary_encoding(df)
 
     X = df.drop('HeartDisease', axis=1) #x-axis represent the target
     y = df['HeartDisease']
