@@ -28,16 +28,15 @@ def clean_data(df):
     data_frame = data_frame.drop_duplicates()
     return data_frame
 
-#logistic regrestion , random forest, desion tree
 
 def convert_to_binary_encoding(df):
     label_encoder = LabelEncoder()
-    categorical_columns = ['Sex', 'ChestPainType', 'FastingBS', 'RestingECG', 'ExerciseAngina', 'ST_Slope']
+    categorical_columns = ['Sex', 'ChestPainType', 'RestingECG', 'ExerciseAngina', 'ST_Slope']
 
     for column in categorical_columns:
         df[column] = label_encoder.fit_transform(df[column])
 
-
+    return df
 
 def KNN(k, X_train, X_test, y_train, y_test, metric='manhattan'):
     knn_classifier = KNeighborsClassifier(n_neighbors=k, metric=metric)
@@ -122,28 +121,29 @@ def SVM(X_train, X_test, y_train, y_test,c):
 if __name__ == '__main__':
     df = read_file("heart.csv")
     df = clean_data(df)
-    convert_to_binary_encoding(df)
+    df = convert_to_binary_encoding(df)
+    df.to_csv('output.csv', index=False)
 
     X = df.drop('HeartDisease', axis=1) #x-axis represent the target
     y = df['HeartDisease']
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state=123)
 
     print("--------------------------KNN-----------------------------------")
-    KNN(1,X_train, X_test, y_train, y_test)
-    KNN(3,X_train, X_test, y_train, y_test)
-    print("--------------------------RF------------------------------------")
-    RF(X_train, X_test, y_train, y_test,5)
-    RF(X_train, X_test, y_train, y_test,100)
-    RF(X_train, X_test, y_train, y_test,300)
-    RF(X_train, X_test, y_train, y_test,150)
-    print("--------------------------LR--------------------------------------")
-    LogisticRegressionModel(X_train, X_test, y_train, y_test)
-    print("-------------------------SVM-------------------------------------")
-    SVM(X_train, X_test, y_train, y_test,0.1)
-    SVM(X_train, X_test, y_train, y_test,1)
-    SVM(X_train, X_test, y_train, y_test,10)
-    SVM(X_train, X_test, y_train, y_test,100)
+    #KNN(1,X_train, X_test, y_train, y_test)
+    #KNN(3,X_train, X_test, y_train, y_test)
+    # print("--------------------------RF------------------------------------")
+    #RF(X_train, X_test, y_train, y_test,5)
+    # RF(X_train, X_test, y_train, y_test,100)
+    # RF(X_train, X_test, y_train, y_test,300)
+    # RF(X_train, X_test, y_train, y_test,150)
+    # print("--------------------------LR--------------------------------------")
+    # LogisticRegressionModel(X_train, X_test, y_train, y_test)
+    # print("-------------------------SVM-------------------------------------")
+    # SVM(X_train, X_test, y_train, y_test,0.1)
+    # SVM(X_train, X_test, y_train, y_test,1)
+    # SVM(X_train, X_test, y_train, y_test,10)
+    # SVM(X_train, X_test, y_train, y_test,100)
 
     #Rf_gridsearch(X_train, X_test, y_train, y_test)
 
