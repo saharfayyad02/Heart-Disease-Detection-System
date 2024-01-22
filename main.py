@@ -305,5 +305,5 @@ if __name__ == '__main__':
     # SVM(X_train, X_test, y_train, y_test,"rbf")
     # SVM(X_train, X_test, y_train, y_test,"sigmoid")
 
-
+#salwaaa
 
