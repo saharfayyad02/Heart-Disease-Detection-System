@@ -176,13 +176,8 @@ def RF_testing(X_train, X_test, y_train, y_test):
     print(f"Best Recall: {best_recall:.4f}")
 
 def RF(X_train, X_test, y_train, y_test,n_estimators):
-    rf_classifier = RandomForestClassifier(
-        n_estimators=n_estimators,max_depth=None,
-        min_samples_split=2,
-        min_samples_leaf=2,
-        max_features=None,
-        random_state=42)
-
+    rf_classifier = RandomForestClassifier(n_estimators=n_estimators,max_depth=None,min_samples_split=2,
+        min_samples_leaf=2,max_features=None,random_state=42)
 
     rf_classifier.fit(X_train, y_train)
     y_test_pred = rf_classifier.predict(X_test)
