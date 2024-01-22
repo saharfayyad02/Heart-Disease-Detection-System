@@ -39,25 +39,50 @@ def EDA(df):
     numerical_features = df[features].select_dtypes(include=['int64', 'float64']).columns
     categorical_features = df[features].select_dtypes(include=['object']).columns
 
+    means = df[numerical_features].mean()
+    medians = df[numerical_features].median()
+    modes = df[categorical_features].mode().iloc[0]
+    color_palette = sns.color_palette("Set2", n_colors=len(numerical_features))
+
    # plot histogram for each numeric value -data visualization- #
-    plt.figure(figsize=(15, 15))
+    plt.figure(figsize=(10, 5))
     for i, feature in enumerate(numerical_features, 1):
-        plt.subplot(2,3, i)
-        #df[feature].hist()
-        sns.histplot(data=df, x=feature, hue=target, multiple="stack", kde=True, palette="Set2", alpha=0.7)
+        plt.subplot(2, 3, i)
+        sns.histplot(data=df[feature], kde=True, color=color_palette[i - 1], alpha=0.7)
+
+        # Add mean, median, and mode lines
+        plt.axvline(means[feature], color='darkred', linestyle='dashed', linewidth=2, label=f'Mean')
+        plt.axvline(medians[feature], color='darkblue', linestyle='dashed', linewidth=2, label=f'Median')
+
         plt.title(f'Histogram for {feature}')
+        plt.legend()
+
     plt.tight_layout()
     plt.show()
 
-    # Plot bar plots for categorical features in subplots -data visualization- #
-    plt.figure(figsize=(15, 15))
+
+    plt.figure(figsize=(10, 5))
     for i, feature in enumerate(categorical_features, 1):
         plt.subplot(2, 3, i)
-        sns.countplot(data=df, x=feature, hue=target, palette="Set2", alpha=0.7)
-        plt.title(f'Bar Plot for {feature}')
+
+        # Check if the feature exists in the DataFrame
+        if feature in df.columns:
+            # Calculate the number of unique values for the current feature
+            num_unique_values = df[feature].nunique()
+
+            # Make sure the palette has enough colors for all unique values
+            color_palette = sns.color_palette("Set2", num_unique_values)
+
+            sns.countplot(data=df, x=feature, hue=feature, palette=color_palette, alpha=0.7, edgecolor='black', legend=False)
+            # Add mode line
+            plt.axvline(modes[feature], color='black', linestyle='dashed', linewidth=2, label=f'Mode')
+
+            plt.title(f'Bar Plot for {feature}')
+        else:
+            print(f"Warning: {feature} is missing in the DataFrame.")
+
     plt.tight_layout()
     plt.show()
-
     # here we should check the data first#
     print("befor handling the data ")
     print("isnull ",df.isnull().sum(),"\n")
@@ -176,8 +201,13 @@ def RF_testing(X_train, X_test, y_train, y_test):
     print(f"Best Recall: {best_recall:.4f}")
 
 def RF(X_train, X_test, y_train, y_test,n_estimators):
-    rf_classifier = RandomForestClassifier(n_estimators=n_estimators,max_depth=None,min_samples_split=2,
-        min_samples_leaf=2,max_features=None,random_state=42)
+    rf_classifier = RandomForestClassifier(
+        n_estimators=n_estimators,max_depth=None,
+        min_samples_split=2,
+        min_samples_leaf=2,
+        max_features=None,
+        random_state=42)
+
 
     rf_classifier.fit(X_train, y_train)
     y_test_pred = rf_classifier.predict(X_test)
@@ -274,5 +304,6 @@ if __name__ == '__main__':
     # SVM(X_train, X_test, y_train, y_test,"poly")
     # SVM(X_train, X_test, y_train, y_test,"rbf")
     # SVM(X_train, X_test, y_train, y_test,"sigmoid")
+
 
 
