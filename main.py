@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn import svm
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split,cross_val_score, StratifiedKFold
+from sklearn.model_selection import train_test_split,cross_val_score, GridSearchCV,StratifiedKFold
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score,make_scorer,confusion_matrix, classification_report
 from sklearn.preprocessing import LabelEncoder
@@ -43,6 +43,7 @@ def EDA(df):
     plt.figure(figsize=(15, 15))
     for i, feature in enumerate(numerical_features, 1):
         plt.subplot(2,3, i)
+        #df[feature].hist()
         sns.histplot(data=df, x=feature, hue=target, multiple="stack", kde=True, palette="Set2", alpha=0.7)
         plt.title(f'Histogram for {feature}')
     plt.tight_layout()
@@ -77,12 +78,12 @@ def EDA(df):
 
     return df
 
-def convert_to_binary_encoding(df):
-    label_encoder = LabelEncoder()
+def convert_to_one_hot_encoding(df):
     categorical_columns = ['Sex', 'ChestPainType', 'RestingECG', 'ExerciseAngina', 'ST_Slope']
-
-    for column in categorical_columns:
-         df[column] = label_encoder.fit_transform(df[column])
+    # Use get_dummies to perform one-hot encoding
+    df = pd.get_dummies(df, columns=categorical_columns)
+    df = df.astype(int)
+    return df
 
 def KNN(k, X_train, X_test, y_train, y_test, metric='manhattan'):
     knn_classifier = KNeighborsClassifier(n_neighbors=k, metric=metric)
@@ -90,149 +91,193 @@ def KNN(k, X_train, X_test, y_train, y_test, metric='manhattan'):
     y_pred = knn_classifier.predict(X_test)
 
     accuracy = accuracy_score(y_test, y_pred)
-    precision = precision_score(y_test, y_pred)
     recall = recall_score(y_test, y_pred)
-    f1 = f1_score(y_test, y_pred)
 
     print(f"Results for k={k} using {metric} distance:")
     print(f"Accuracy: {accuracy:.4f}")
-    print(f"Precision: {precision:.4f}")
     print(f"Recall: {recall:.4f}")
-    print(f"F1-score: {f1:.4f}\n")
 
 
-def RF(X_train, X_test, y_train, y_test, n_estimator):
-    rf_classifier = RandomForestClassifier(n_estimators=n_estimator, random_state=42)
+def RF_testing(X_train, X_test, y_train, y_test):
+
+    # Define the hyperparameter grid to search
+    param_grid = {
+        'n_estimators': [50, 100, 150, 200],
+        'max_depth': [None, 10, 20, 30],
+        'min_samples_split': [2, 5, 10],
+        'min_samples_leaf': [1, 2, 4],
+        'max_features': ['sqrt', 'log2', None]  # Remove 'auto'
+    }
+
+    results = []
+
+    for n_estimators in param_grid['n_estimators']:
+        for max_depth in param_grid['max_depth']:
+            for min_samples_split in param_grid['min_samples_split']:
+                for min_samples_leaf in param_grid['min_samples_leaf']:
+                    for max_features in param_grid['max_features']:
+                        # Create a RandomForestClassifier with current hyperparameters
+                        rf_classifier = RandomForestClassifier(
+                            n_estimators=n_estimators,
+                            max_depth=max_depth,
+                            min_samples_split=min_samples_split,
+                            min_samples_leaf=min_samples_leaf,
+                            max_features=max_features,
+                            random_state=42
+                        )
+
+                        # Train the model
+                        rf_classifier.fit(X_train, y_train)
+
+                        # Predictions on the test set
+                        y_test_pred = rf_classifier.predict(X_test)
+
+                        # Evaluate model performance on the test set
+                        test_accuracy = accuracy_score(y_test, y_test_pred)
+                        test_recall = recall_score(y_test, y_test_pred)
+
+                        # Store the results
+                        results.append({
+                            'n_estimators': n_estimators,
+                            'max_depth': max_depth,
+                            'min_samples_split': min_samples_split,
+                            'min_samples_leaf': min_samples_leaf,
+                            'max_features': max_features,
+                            'accuracy': test_accuracy,
+                            'recall': test_recall
+                        })
+    best_accuracy = 0
+    best_recall = 0
+    best_hyperparameters = {}
+    for result in results:
+        accuracy = result['accuracy']
+        recall = result['recall']
+
+        # Check if the current combination has better accuracy or recall
+        if accuracy > best_accuracy or (accuracy == best_accuracy and recall > best_recall):
+            best_accuracy = accuracy
+            best_recall = recall
+            best_hyperparameters = {
+                'n_estimators': result['n_estimators'],
+                'max_depth': result['max_depth'],
+                'min_samples_split': result['min_samples_split'],
+                'min_samples_leaf': result['min_samples_leaf'],
+                'max_features': result['max_features']
+            }
+
+    # Print the best hyperparameters and corresponding metrics
+    print("Best Hyperparameters:")
+    print(f"Best n_estimators: {best_hyperparameters['n_estimators']}")
+    print(f"Best max_depth: {best_hyperparameters['max_depth']}")
+    print(f"Best min_samples_split: {best_hyperparameters['min_samples_split']}")
+    print(f"Best min_samples_leaf: {best_hyperparameters['min_samples_leaf']}")
+    print(f"Best max_features: {best_hyperparameters['max_features']}")
+    print(f"Best Accuracy: {best_accuracy:.4f}")
+    print(f"Best Recall: {best_recall:.4f}")
+
+def RF(X_train, X_test, y_train, y_test,n_estimators):
+    rf_classifier = RandomForestClassifier(
+        n_estimators=n_estimators,max_depth=None,
+        min_samples_split=2,
+        min_samples_leaf=2,
+        max_features=None,
+        random_state=42)
+
+
     rf_classifier.fit(X_train, y_train)
-
-    # Predictions on the test set
     y_test_pred = rf_classifier.predict(X_test)
-
-    # Evaluate model performance on test set
     test_accuracy = accuracy_score(y_test, y_test_pred)
-    test_precision = precision_score(y_test, y_test_pred)
     test_recall = recall_score(y_test, y_test_pred)
-    test_f1 = f1_score(y_test, y_test_pred)
 
-    print(f"RF for n_estimators={n_estimator}:")
-    print(f"Accuracy: {test_accuracy:.4f}")
-    print(f"Precision: {test_precision:.4f}")
-    print(f"Recall: {test_recall:.4f}")
-    print(f"F1-score: {test_f1:.4f}\n")
+    print(f"Results for SVM (Testing Set) for {n_estimators}:")
+    print(f"Best Accuracy: {test_accuracy:.4f}")
+    print(f"Best Recall: {test_recall:.4f}")
 
 
-# def LogisticRegressionModel(X_train, X_test, y_train, y_test):
-#     # Hyperparameter tuning for Logistic Regression
-#     param_grid = {'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000]}
-#     logreg = LogisticRegression(max_iter=1000)
-#     grid_search = GridSearchCV(logreg, param_grid, cv=5)
-#     grid_search.fit(X_train, y_train)
-#
-#     best_C = grid_search.best_params_['C']
-#
-#     # Use the best hyperparameter to train the model
-#     logreg = LogisticRegression(C=best_C, max_iter=1000)
-#     logreg.fit(X_train, y_train)
-#     y_pred = logreg.predict(X_test)
-#
-#     accuracy = accuracy_score(y_test, y_pred)
-#     precision = precision_score(y_test, y_pred)
-#     recall = recall_score(y_test, y_pred)
-#     f1 = f1_score(y_test, y_pred)
-#
-#     print("Results for Logistic Regression:")
-#     print(f"Best C: {best_C}")
-#     print(f"Accuracy: {accuracy:.4f}")
-#     print(f"Precision: {precision:.4f}")
-#     print(f"Recall: {recall:.4f}")
-#     print(f"F1-score: {f1:.4f}\n")
+def SVM(X_train, X_test, y_train, y_test):
+        # Define a parameter grid for hyperparameter tuning
+        param_grid = {
+            'kernel' :['linear','poly'],
+            'C': [0.1, 1, 10, 100],
+            'gamma': ['scale', 'auto'],
+            'degree': [2, 3, 4]
+        }
 
-def SVM(X_train, X_test, y_train, y_test, kernel):
-    # Initialize SVM classifier
-    clf = svm.SVC(kernel=kernel)
+        # Create an SVM classifier
+        clf = svm.SVC(random_state=42)
 
-    # Train the model on the training set
-    clf.fit(X_train, y_train)
+        # Create a GridSearchCV object
+        grid_search = GridSearchCV(clf, param_grid, cv=5, scoring='accuracy')
 
-    # Make predictions on the test set
-    y_test_pred = clf.predict(X_test)
+        # Train the model using the best hyperparameters from the grid search
+        grid_search.fit(X_train, y_train)
 
-    # Evaluate model performance on the testing set
-    test_accuracy = accuracy_score(y_test, y_test_pred)
-    test_precision = precision_score(y_test, y_test_pred)
-    test_recall = recall_score(y_test, y_test_pred)
-    test_f1 = f1_score(y_test, y_test_pred)
+        # Get the best parameters from the grid search
+        best_params = grid_search.best_params_
 
-    print(f"Results for SVM (Testing Set) for {kernel}:")
-    print(f"Accuracy: {test_accuracy:.4f}")
-    print(f"Precision: {test_precision:.4f}")
-    print(f"Recall: {test_recall:.4f}")
-    print(f"F1-score: {test_f1:.4f}\n")
+        # Print the best parameters
+        print("Best Hyperparameters:", best_params)
 
-def RF_Performance(X_train, X_test, y_train, y_test):
-    rf_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
-    rf_classifier.fit(X_train, y_train)
+        # Make predictions on the test set
+        y_pred = grid_search.predict(X_test)
 
-    # Predictions on the test set
-    y_test_pred = rf_classifier.predict(X_test)
+        # Evaluate model performance
+        accuracy = accuracy_score(y_test, y_pred)
+        precision = precision_score(y_test, y_pred)
+        recall = recall_score(y_test, y_pred)
+        f1 = f1_score(y_test, y_pred)
 
-    # Model performance metrics
-    accuracy = accuracy_score(y_test, y_test_pred)
-    precision = precision_score(y_test, y_test_pred, average='weighted')
-    recall = recall_score(y_test, y_test_pred, average='weighted')
+        print(f"Accuracy: {accuracy:.4f}")
+        print(f"Precision: {precision:.4f}")
+        print(f"Recall: {recall:.4f}")
+        print(f"F1-score: {f1:.4f}\n")
+    # # Initialize SVM classifier
+    # clf = svm.SVC(kernel=kernel)
+    #
+    # # Train the model on the training set
+    # clf.fit(X_train, y_train)
+    #
+    # # Make predictions on the test set
+    # y_test_pred = clf.predict(X_test)
+    #
+    # # Evaluate model performance on the testing set
+    # test_accuracy = accuracy_score(y_test, y_test_pred)
+    # test_precision = precision_score(y_test, y_test_pred)
+    # test_recall = recall_score(y_test, y_test_pred)
+    # test_f1 = f1_score(y_test, y_test_pred)
+    #
+    # print(f"Results for SVM (Testing Set) for {kernel}:")
+    # print(f"Accuracy: {test_accuracy:.4f}")
+    # print(f"Recall: {test_recall:.4f}")
 
-    # Confusion Matrix
-    cm = confusion_matrix(y_test, y_test_pred)
-    print("Confusion Matrix:\n", cm)
-
-    # Detailed classification report
-    report = classification_report(y_test, y_test_pred)
-    print("\nClassification Report:\n", report)
-
-    # Feature Importances
-    feature_importances = rf_classifier.feature_importances_
-    print("\nFeature Importances:\n", feature_importances)
-
-    # Cross-validation (optional, for more robust performance assessment)
-    scores = cross_val_score(rf_classifier, X, y, cv=5)  # X and y are your full dataset
-    print("\nCross-Validation Scores:\n", scores)
-
-    # Error Analysis (suggested approach)
-    errors = X_test[(y_test != y_test_pred)]
-    #print("\nCross-Validation errors:\n",errors)
-    #Analyze the 'errors' DataFrame to find common patterns among misclassifications
-
-    # Print overall model performance
-    print(f"\nModel Performance Metrics:\nAccuracy: {accuracy:.2f}, Precision: {precision:.2f}, Recall: {recall:.2f}")
 
 
 if __name__ == '__main__':
     df = read_file("heart.csv")
     df = EDA(df)
-    convert_to_binary_encoding(df)
+    df = convert_to_one_hot_encoding(df)
+    df.to_csv('output.csv',index=False)
 
     X = df.drop('HeartDisease', axis=1) #x-axis represent the target
     y = df['HeartDisease']
+
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state=42)
 
     print("--------------------------KNN-----------------------------------")
     KNN(1,X_train, X_test, y_train, y_test)
     KNN(3,X_train, X_test, y_train, y_test)
-
     print("--------------------------RF------------------------------------")
-    RF(X_train, X_test, y_train, y_test,5)
-    RF(X_train, X_test, y_train, y_test,10)
+    RF(X_train, X_test, y_train, y_test,50)
     RF(X_train, X_test, y_train, y_test,100)
-    RF(X_train, X_test, y_train, y_test,300)
+    RF(X_train, X_test, y_train, y_test,150)
+    RF(X_train, X_test, y_train, y_test,30)
 
-    print("-------------------------SVM-------------------------------------")
-    SVM(X_train, X_test, y_train, y_test,"linear")
-    SVM(X_train, X_test, y_train, y_test,"poly")
-    SVM(X_train, X_test, y_train, y_test,"rbf")
-    SVM(X_train, X_test, y_train, y_test,"sigmoid")
 
-    print("-------------------------RF_Performance-------------------------------")
-    RF_Performance(X_train, X_test, y_train, y_test)
+    # print("-------------------------SVM-------------------------------------")
+    # SVM(X_train, X_test, y_train, y_test,"linear")
+    # SVM(X_train, X_test, y_train, y_test,"poly")
+    # SVM(X_train, X_test, y_train, y_test,"rbf")
+    # SVM(X_train, X_test, y_train, y_test,"sigmoid")
 
 
