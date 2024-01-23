@@ -240,6 +240,32 @@ def RF(X_train, X_test, y_train, y_test):
     print(f"Best Accuracy: {test_accuracy:.4f}")
     print(f"Best Recall: {test_recall:.4f}")
 
+    class_labels = np.unique(np.concatenate((y_test, y_test_pred)))
+    #print the confusion_matrix
+    cm = confusion_matrix(y_test, y_test_pred)
+    plt.imshow(cm, cmap=plt.cm.Blues)
+    plt.xlabel("Predicted labels")
+    plt.ylabel("True labels")
+    plt.title(f"Confusion Matrix For Random Forest Model")
+
+    # Add the numbers in each cell
+    for i in range(len(cm)):
+        for j in range(len(cm[i])):
+            plt.text(j, i, str(cm[i, j]), ha='center', va='center', color='black')
+            if i == j:
+                plt.text(j + 0.4, i + 0.4, 'TN' if i == 0 else 'TP', ha='center', va='center', color='black',
+                         fontsize=10)
+            else:
+                plt.text(j + 0.4, i + 0.4, 'FP' if i == 0 else 'FN', ha='center', va='center', color='black',
+                         fontsize=10)
+
+    plt.colorbar()
+    plt.xticks(ticks=[0, 1], labels=class_labels)
+    plt.yticks(ticks=[0, 1], labels=class_labels)
+    plt.show()
+    print(cm)
+
+
 def SVM_testing(X_train, y_train):
 
     X_train_new, X_val, y_train_new, y_val = train_test_split(X_train, y_train, test_size=0.2,random_state=42)
@@ -301,30 +327,13 @@ def SVM(X_train, X_test, y_train, y_test):
     print(f"Accuracy: {test_accuracy:.4f}")
     print(f"Recall: {test_recall:.4f}")
 
-def RF_Analysis(X_train, X_test, y_train, y_test):
-    rf_classifier = RandomForestClassifier(
-        n_estimators=50, max_depth=None,
-        min_samples_split=2,
-        min_samples_leaf=1,
-        max_features=None,random_state=42)
-
-    rf_classifier.fit(X_train, y_train)
-    y_test_pred = rf_classifier.predict(X_test)
-    test_accuracy = accuracy_score(y_test, y_test_pred)
-    test_recall = recall_score(y_test, y_test_pred)
     class_labels = np.unique(np.concatenate((y_test, y_test_pred)))
-
-    # find the accuracy and recall
-    print(f"Results of test data for RF :")
-    print(f"Best Accuracy: {test_accuracy:.4f}")
-    print(f"Best Recall: {test_recall:.4f}")
-
     #print the confusion_matrix
     cm = confusion_matrix(y_test, y_test_pred)
-    plt.imshow(cm, cmap=plt.cm.Blues)
+    plt.imshow(cm, cmap=plt.cm.Reds)
     plt.xlabel("Predicted labels")
     plt.ylabel("True labels")
-    plt.title(f"Confusion Matrix")
+    plt.title(f"Confusion Matrix For SVM Model")
 
     # Add the numbers in each cell
     for i in range(len(cm)):
@@ -343,6 +352,25 @@ def RF_Analysis(X_train, X_test, y_train, y_test):
     plt.show()
     print(cm)
 
+
+
+def RF_Analysis(X_train, X_test, y_train, y_test):
+    rf_classifier = RandomForestClassifier(
+        n_estimators=50, max_depth=None,
+        min_samples_split=2,
+        min_samples_leaf=1,
+        max_features=None,random_state=42)
+
+    rf_classifier.fit(X_train, y_train)
+    y_test_pred = rf_classifier.predict(X_test)
+    test_accuracy = accuracy_score(y_test, y_test_pred)
+    test_recall = recall_score(y_test, y_test_pred)
+
+    # find the accuracy and recall
+    print(f"Results of test data for RF :")
+    print(f"Best Accuracy: {test_accuracy:.4f}")
+    print(f"Best Recall: {test_recall:.4f}")
+
     misclassified_indices = np.where(y_test_pred != y_test)[0]
     misclassified_examples = X_test.iloc[misclassified_indices]
     print("Misclassified Examples:")
@@ -353,9 +381,7 @@ def RF_Analysis(X_train, X_test, y_train, y_test):
         predicted_label = y_test_pred[idx]
 
         # Get feature names and values for the misclassified instance
-        feature_names = X_test.columns  # Assuming X_test is a pandas DataFrame
         feature_values = X_test.iloc[idx].to_dict()  # Convert row to a dictionary
-
         # Print information in a clear format
         print(f"Instance {idx}:")
         print(f"  Actual Label: {true_label}")
@@ -364,9 +390,6 @@ def RF_Analysis(X_train, X_test, y_train, y_test):
             print(f"  {feature_name}: {feature_value}")
 
         print("\n")  # Add a separator for clarity
-
-
-
 
     feature_names = X_train.columns
     num_features = len(feature_names)
@@ -415,6 +438,5 @@ if __name__ == '__main__':
     print("--------------------------SVM-------------------------------------")
     #SVM_testing(X_train, y_train)
     SVM(X_train, X_test, y_train, y_test)
-    print("--------------------------RF_Analysis-------------------------------------")
+    print("------------------------RF_Analysis------------------------------")
     RF_Analysis(X_train, X_test, y_train, y_test)
-
