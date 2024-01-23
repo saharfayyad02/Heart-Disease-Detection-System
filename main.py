@@ -1,17 +1,15 @@
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn import svm
-from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split,cross_val_score, GridSearchCV,StratifiedKFold
+from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score,make_scorer,confusion_matrix, classification_report
-from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.metrics import accuracy_score, recall_score
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import GridSearchCV
-from itertools import product
+from sklearn.metrics import confusion_matrix
+
 
 def read_file(file):
     file_path = f"{file}"
@@ -117,13 +115,36 @@ def KNN(k, X_train, X_test, y_train, y_test, metric='manhattan'):
     knn_classifier = KNeighborsClassifier(n_neighbors=k, metric=metric)
     knn_classifier.fit(X_train, y_train)
     y_pred = knn_classifier.predict(X_test)
-
     accuracy = accuracy_score(y_test, y_pred)
     recall = recall_score(y_test, y_pred)
+    class_labels = np.unique(np.concatenate((y_test, y_pred)))
 
     print(f"Results for k={k} using {metric} distance:")
     print(f"Accuracy: {accuracy:.4f}")
     print(f"Recall: {recall:.4f}")
+
+    # print the confusion_matrix
+    cm = confusion_matrix(y_test, y_pred)
+    plt.imshow(cm, cmap=plt.cm.Greens)
+    plt.xlabel("Predicted labels")
+    plt.ylabel("True labels")
+    plt.title(f"Confusion Matrix for k = {k}")
+
+    # Add the numbers in each cell
+    for i in range(len(cm)):
+        for j in range(len(cm[i])):
+            plt.text(j, i, str(cm[i, j]), ha='center', va='center', color='black')
+            if i == j:
+                plt.text(j + 0.4, i + 0.4, 'TN' if i == 0 else 'TP', ha='center', va='center', color='black',
+                         fontsize=10)
+            else:
+                plt.text(j + 0.4, i + 0.4, 'FP' if i == 0 else 'FN', ha='center', va='center', color='black',
+                         fontsize=10)
+
+    plt.colorbar()
+    plt.xticks(ticks=[0, 1], labels=class_labels)
+    plt.yticks(ticks=[0, 1], labels=class_labels)
+    plt.show()
 
 
 def RF_testing(X_train, y_train):
@@ -218,8 +239,6 @@ def RF(X_train, X_test, y_train, y_test):
     print(f"Results of test data for RF :")
     print(f"Best Accuracy: {test_accuracy:.4f}")
     print(f"Best Recall: {test_recall:.4f}")
-    print("\n****************************************************************\n")
-
 
 def SVM_testing(X_train, y_train):
 
@@ -282,6 +301,98 @@ def SVM(X_train, X_test, y_train, y_test):
     print(f"Accuracy: {test_accuracy:.4f}")
     print(f"Recall: {test_recall:.4f}")
 
+def RF_Analysis(X_train, X_test, y_train, y_test):
+    rf_classifier = RandomForestClassifier(
+        n_estimators=50, max_depth=None,
+        min_samples_split=2,
+        min_samples_leaf=1,
+        max_features=None,random_state=42)
+
+    rf_classifier.fit(X_train, y_train)
+    y_test_pred = rf_classifier.predict(X_test)
+    test_accuracy = accuracy_score(y_test, y_test_pred)
+    test_recall = recall_score(y_test, y_test_pred)
+    class_labels = np.unique(np.concatenate((y_test, y_test_pred)))
+
+    # find the accuracy and recall
+    print(f"Results of test data for RF :")
+    print(f"Best Accuracy: {test_accuracy:.4f}")
+    print(f"Best Recall: {test_recall:.4f}")
+
+    #print the confusion_matrix
+    cm = confusion_matrix(y_test, y_test_pred)
+    plt.imshow(cm, cmap=plt.cm.Blues)
+    plt.xlabel("Predicted labels")
+    plt.ylabel("True labels")
+    plt.title(f"Confusion Matrix")
+
+    # Add the numbers in each cell
+    for i in range(len(cm)):
+        for j in range(len(cm[i])):
+            plt.text(j, i, str(cm[i, j]), ha='center', va='center', color='black')
+            if i == j:
+                plt.text(j + 0.4, i + 0.4, 'TN' if i == 0 else 'TP', ha='center', va='center', color='black',
+                         fontsize=10)
+            else:
+                plt.text(j + 0.4, i + 0.4, 'FP' if i == 0 else 'FN', ha='center', va='center', color='black',
+                         fontsize=10)
+
+    plt.colorbar()
+    plt.xticks(ticks=[0, 1], labels=class_labels)
+    plt.yticks(ticks=[0, 1], labels=class_labels)
+    plt.show()
+    print(cm)
+
+    misclassified_indices = np.where(y_test_pred != y_test)[0]
+    misclassified_examples = X_test.iloc[misclassified_indices]
+    print("Misclassified Examples:")
+    print(misclassified_examples)
+
+    for idx in misclassified_indices:
+        true_label = y_test.iloc[idx]
+        predicted_label = y_test_pred[idx]
+
+        # Get feature names and values for the misclassified instance
+        feature_names = X_test.columns  # Assuming X_test is a pandas DataFrame
+        feature_values = X_test.iloc[idx].to_dict()  # Convert row to a dictionary
+
+        # Print information in a clear format
+        print(f"Instance {idx}:")
+        print(f"  Actual Label: {true_label}")
+        print(f"  Predicted Label: {predicted_label}")
+        for feature_name, feature_value in feature_values.items():
+            print(f"  {feature_name}: {feature_value}")
+
+        print("\n")  # Add a separator for clarity
+
+
+
+
+    feature_names = X_train.columns
+    num_features = len(feature_names)
+
+    # Calculate the number of rows needed based on the number of features
+    num_rows = int(np.ceil(num_features / 2))
+
+    # Create subplots
+    fig, axes = plt.subplots(num_rows, 2, figsize=(15, 5 * num_rows))
+
+    # Visualize feature distributions for correctly and misclassified examples
+    for i, feature in enumerate(feature_names):
+        row = i // 2
+        col = i % 2
+        ax = axes[row, col]
+        ax.set_title(f'Feature Distribution - {feature}')
+
+        sns.histplot(X_test.loc[y_test == y_test_pred, feature], label='Correct', kde=True, ax=ax)
+        sns.histplot(X_test.loc[y_test != y_test_pred, feature], label='Misclassified', kde=True, ax=ax)
+
+        ax.legend()
+
+    # Adjust layout and show
+    plt.tight_layout()
+    plt.show()
+
 
 if __name__ == '__main__':
     df = read_file("heart.csv")
@@ -301,7 +412,9 @@ if __name__ == '__main__':
     print("--------------------------RF------------------------------------")
     #RF_testing(X_train, y_train)
     RF(X_train, X_test, y_train, y_test)
-    print("-------------------------SVM-------------------------------------")
+    print("--------------------------SVM-------------------------------------")
     #SVM_testing(X_train, y_train)
     SVM(X_train, X_test, y_train, y_test)
+    print("--------------------------RF_Analysis-------------------------------------")
+    RF_Analysis(X_train, X_test, y_train, y_test)
 
