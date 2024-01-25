@@ -2,13 +2,13 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn import svm
 from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score, recall_score
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix
+from scipy import stats
 
 
 def read_file(file):
@@ -102,6 +102,16 @@ def EDA(df):
     print("isnull ",df.isnull().sum(),"\n")
     print("duplicated",df.duplicated().sum(),"\n")
 
+    numerical_col = df.select_dtypes(include=[np.number])
+    # Convert any non-numeric values to NaN
+    numerical_col = numerical_col.apply(pd.to_numeric, errors='coerce')
+    # Drop NaN values if any
+    numerical_col = numerical_col.dropna()
+    z_scores = np.abs(stats.zscore(numerical_col))
+    outliers = np.where(z_scores > 3)
+    print(f"outliers: {outliers}")
+
+    df = df.drop(outliers[0])
     return df
 
 def convert_to_one_hot_encoding(df):
@@ -111,7 +121,7 @@ def convert_to_one_hot_encoding(df):
     df = df.astype(int)
     return df
 
-def KNN(k, X_train, X_test, y_train, y_test, metric='manhattan'):
+def KNN(k, X_train, X_test, y_train, y_test, metric='euclidean'):
     knn_classifier = KNeighborsClassifier(n_neighbors=k, metric=metric)
     knn_classifier.fit(X_train, y_train)
     y_pred = knn_classifier.predict(X_test)
@@ -150,13 +160,12 @@ def KNN(k, X_train, X_test, y_train, y_test, metric='manhattan'):
 def RF_testing(X_train, y_train):
     X_train_new, X_val, y_train_new, y_val = train_test_split(X_train, y_train, test_size=0.2,random_state=42)
 
-    # Define the hyperparameter grid to search
+    # Define the hyperparameter grid
     param_grid = {
         'n_estimators' : [50,100,150,300],
         'max_depth': [None, 10, 20, 30],
-        'min_samples_split': [2, 5, 10],
-        'min_samples_leaf': [1, 2, 4],
-        'max_features': ['sqrt', 'log2', None]  # Remove 'auto'
+        'min_samples_split': [2, 5,7 ,10],
+        'min_samples_leaf': [1, 2, 4,6],
     }
 
     results = []
@@ -165,25 +174,20 @@ def RF_testing(X_train, y_train):
         for max_depth in param_grid['max_depth']:
             for min_samples_split in param_grid['min_samples_split']:
                 for min_samples_leaf in param_grid['min_samples_leaf']:
-                    for max_features in param_grid['max_features']:
                         # Create a RandomForestClassifier with current hyperparameters
                         rf_classifier = RandomForestClassifier(
                             n_estimators=n_estimators,
                             max_depth=max_depth,
                             min_samples_split=min_samples_split,
-                            min_samples_leaf=min_samples_leaf,
-                            max_features=max_features,random_state=42
-                        )
+                            min_samples_leaf=min_samples_leaf)
 
                         # Train the model
                         rf_classifier.fit(X_train_new, y_train_new)
-
                         # Predictions on the test set
                         y_val_pred = rf_classifier.predict(X_val)
-
                         # Evaluate model performance on the test set
-                        val_accuracy = accuracy_score(y_val, y_val_pred)
-                        val_recall = recall_score(y_val, y_val_pred)
+                        val_accuracy = accuracy_score(y_train, y_val_pred)
+                        val_recall = recall_score(y_train, y_val_pred)
 
                         # Store the results
                         results.append({
@@ -191,7 +195,6 @@ def RF_testing(X_train, y_train):
                             'max_depth': max_depth,
                             'min_samples_split': min_samples_split,
                             'min_samples_leaf': min_samples_leaf,
-                            'max_features': max_features,
                             'accuracy': val_accuracy,
                             'recall': val_recall
                         })
@@ -211,7 +214,6 @@ def RF_testing(X_train, y_train):
                 'max_depth': result['max_depth'],
                 'min_samples_split': result['min_samples_split'],
                 'min_samples_leaf': result['min_samples_leaf'],
-                'max_features': result['max_features']
             }
 
     # Print the best hyperparameters and corresponding metrics
@@ -220,17 +222,11 @@ def RF_testing(X_train, y_train):
     print(f"Best max_depth: {best_hyperparameters['max_depth']}")
     print(f"Best min_samples_split: {best_hyperparameters['min_samples_split']}")
     print(f"Best min_samples_leaf: {best_hyperparameters['min_samples_leaf']}")
-    print(f"Best max_features: {best_hyperparameters['max_features']}")
     print(f"Best Accuracy: {best_accuracy:.4f}")
     print(f"Best Recall: {best_recall:.4f}")
 
 def RF(X_train, X_test, y_train, y_test):
-    rf_classifier = RandomForestClassifier(
-        n_estimators=50, max_depth=None,
-        min_samples_split=2,
-        min_samples_leaf=1,
-        max_features=None,random_state=42)
-
+    rf_classifier = RandomForestClassifier(n_estimators=100, max_depth=10,min_samples_split=7,min_samples_leaf=2, random_state=42)
     rf_classifier.fit(X_train, y_train)
     y_test_pred = rf_classifier.predict(X_test)
     test_accuracy = accuracy_score(y_test, y_test_pred)
@@ -263,12 +259,13 @@ def RF(X_train, X_test, y_train, y_test):
     plt.xticks(ticks=[0, 1], labels=class_labels)
     plt.yticks(ticks=[0, 1], labels=class_labels)
     plt.show()
+    print("Confusion Matrix For Random Forest Model")
     print(cm)
 
 
 def SVM_testing(X_train, y_train):
 
-    X_train_new, X_val, y_train_new, y_val = train_test_split(X_train, y_train, test_size=0.2,random_state=42)
+    X_train_new, X_val, y_train_new, y_val = train_test_split(X_train, y_train, test_size=0.3,random_state=42)
 
     # Define a parameter grid for hyperparameter tuning
     param_grid = {
@@ -284,6 +281,7 @@ def SVM_testing(X_train, y_train):
                     svm_classifier.fit(X_train_new, y_train_new)
                     # Predictions on the test set
                     y_val_pred = svm_classifier.predict(X_val)
+                    #y_val_pred = cross_val_predict(svm_classifier, X_train, y_train, cv=5)
                     # Evaluate model performance on the test set
                     test_accuracy = accuracy_score(y_val, y_val_pred)
                     test_recall = recall_score(y_val, y_val_pred)
@@ -350,16 +348,16 @@ def SVM(X_train, X_test, y_train, y_test):
     plt.xticks(ticks=[0, 1], labels=class_labels)
     plt.yticks(ticks=[0, 1], labels=class_labels)
     plt.show()
+    print("Confusion Matrix For SVM Model")
     print(cm)
 
 
 
 def RF_Analysis(X_train, X_test, y_train, y_test):
     rf_classifier = RandomForestClassifier(
-        n_estimators=50, max_depth=None,
-        min_samples_split=2,
-        min_samples_leaf=1,
-        max_features=None,random_state=42)
+        n_estimators=100, max_depth=10,
+        min_samples_split=7,
+        min_samples_leaf=2, random_state=42)
 
     rf_classifier.fit(X_train, y_train)
     y_test_pred = rf_classifier.predict(X_test)
@@ -386,10 +384,6 @@ def RF_Analysis(X_train, X_test, y_train, y_test):
         print(f"Instance {idx}:")
         print(f"  Actual Label: {true_label}")
         print(f"  Predicted Label: {predicted_label}")
-        for feature_name, feature_value in feature_values.items():
-            print(f"  {feature_name}: {feature_value}")
-
-        print("\n")  # Add a separator for clarity
 
     feature_names = X_train.columns
     num_features = len(feature_names)
@@ -435,7 +429,7 @@ if __name__ == '__main__':
     print("--------------------------RF------------------------------------")
     #RF_testing(X_train, y_train)
     RF(X_train, X_test, y_train, y_test)
-    print("--------------------------SVM-------------------------------------")
+    print("--------------------------SVM-----------------------------------")
     #SVM_testing(X_train, y_train)
     SVM(X_train, X_test, y_train, y_test)
     print("------------------------RF_Analysis------------------------------")
