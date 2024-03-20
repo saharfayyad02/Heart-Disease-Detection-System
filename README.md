@@ -34,6 +34,6 @@ This project implements a machine learning-based system for detecting heart dise
 2. Install dependencies
 3. Run the system
 
-##Contributing
+## Contributing
 Contributions to the development of this project are welcome. If you encounter any bugs, issues, or have suggestions for improvements, please open an issue or submit a pull request.
 
